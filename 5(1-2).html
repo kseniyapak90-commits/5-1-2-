@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>xinwaychinese · 双面闪卡 (综合词汇)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #f1ebe5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Times New Roman', Times, serif;
+            padding: 12px;
+        }
+
+        .card-frame {
+            width: 100%;
+            max-width: 700px;
+            background-color: #fdf8f2;
+            border-radius: 48px 48px 32px 32px;
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+            padding: 24px 20px 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 2px solid #e6d5b8;
+        }
+
+        /* 可爱图标 + 词语练习 */
+        .header-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            width: 100%;
+        }
+
+        .icon-badge {
+            background: #ffb347;
+            border-radius: 60px;
+            padding: 8px 18px 8px 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 6px 0 #c15a1c;
+            border: 2px solid #a04500;
+        }
+
+        .icon-badge span {
+            font-size: 2.2rem;
+            line-height: 1;
+            filter: drop-shadow(2px 2px 0 #f28500);
+        }
+
+        .icon-badge h1 {
+            font-size: 1.9rem;
+            font-family: '楷体', 'KaiTi', '华文楷体', 'STKaiti', serif;
+            color: #2d1b0c;
+            letter-spacing: 3px;
+            font-weight: 600;
+            margin-right: 5px;
+            text-shadow: 1px 1px 0 #fce5b1;
+        }
+
+        /* 大黑板区域 — 占页面2/3左右 */
+        .blackboard-area {
+            width: 100%;
+            flex: 2 1 auto;
+            min-height: 380px;
+            max-height: 60vh;
+            aspect-ratio: 4 / 3;
+            margin: 10px 0 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 黑板卡片容器 — 正确的3D翻转设置 */
+        .flip-container {
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
+            background-color: transparent;
+            perspective: 2000px;
+            cursor: pointer;
+            border-radius: 30px;
+            box-shadow: 0 20px 0 #3a4a3f, 0 25px 30px -5px rgba(0, 0, 0, 0.4);
+        }
+
+        .flip-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.5s;
+            transform-style: preserve-3d;
+            border-radius: 30px;
+        }
+
+        .flip-inner.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .front, .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            background: #2b4b3a;
+            background-image: radial-gradient(circle at 10px 10px, #3f6b4f 2px, transparent 2px),
+                                radial-gradient(circle at 30px 25px, #3f6b4f 2px, transparent 2px);
+            background-size: 60px 60px, 120px 120px;
+            border: 12px solid #6f4f2e;
+            border-radius: 40px;
+            box-shadow: inset 0 -5px 0 #3d5a3d, inset 0 5px 10px rgba(255, 255, 240, 0.3), 0 10px 0 #4d3e2b;
+            padding: 25px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            color: #f5f2da;
+            font-family: '楷体', 'KaiTi', 'STKaiti', serif;
+            overflow-y: auto;
+        }
+
+        .back {
+            transform: rotateY(180deg);
+        }
+
+        /* 固定左上角 xinwaychinese (卡片内部) */
+        .xinway-tag {
+            position: absolute;
+            top: 12px;
+            left: 18px;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #f9e0a0;
+            text-shadow: 2px 2px 0 #3a5e3a;
+            letter-spacing: 1px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2px 8px 2px 6px;
+            border-radius: 40px;
+            backdrop-filter: blur(1px);
+            border: 1px dashed #e8c37b;
+            opacity: 0.95;
+            pointer-events: none;
+        }
+
+        /* 正面内容排版 */
+        .word-area {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: 25px;
+            font-family: '楷体', 'KaiTi', 'STKaiti', serif;
+            pointer-events: none;
+        }
+
+        .chinese-word {
+            font-size: 7vw;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 0.2rem;
+            text-shadow: 4px 4px 0 #1f3a27;
+            color: #fff9e0;
+            word-break: break-word;
+            max-width: 90%;
+        }
+
+        .example-sentence {
+            font-size: 3.8vw;
+            font-family: '楷体', 'KaiTi', 'STKaiti', serif;
+            background: rgba(255, 250, 210, 0.15);
+            padding: 10px 14px;
+            border-radius: 60px;
+            border-left: 5px solid #ffd966;
+            color: #fef9d7;
+            margin: 8px 0 5px;
+            max-width: 95%;
+            word-break: break-word;
+            box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5);
+            line-height: 1.4;
+        }
+
+        /* 背面内容排版 */
+        .back-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+            font-family: 'Times New Roman', Times, serif;
+            margin-top: 25px;
+            gap: 0.6rem;
+            color: #f5f0cf;
+            pointer-events: none;
+        }
+
+        .pinyin {
+            font-size: 5vw;
+            font-weight: 600;
+            font-family: 'Times New Roman', Times, serif;
+            background: #3b5e4b;
+            padding: 5px 20px;
+            border-radius: 50px;
+            border: 2px solid #c9ae74;
+            width: fit-content;
+        }
+
+        .pos {
+            font-size: 4.2vw;
+            font-family: 'Times New Roman', Times, serif;
+            background: #637a54;
+            padding: 6px 22px;
+            border-radius: 40px;
+            color: #fef7cd;
+            font-weight: 500;
+        }
+
+        .russian {
+            font-size: 4vw;
+            font-family: 'Times New Roman', Times, serif;
+            background: #2a4230;
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 2px dashed #f1cf8a;
+            max-width: 95%;
+            word-break: break-word;
+        }
+
+        /* 按钮栏 */
+        .button-bar {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: #f3d9a4;
+            border: 4px solid #ba8b4a;
+            color: #3d2b13;
+            font-size: 1.7rem;
+            font-weight: bold;
+            padding: 12px 35px;
+            border-radius: 60px;
+            box-shadow: 0 7px 0 #7b5a38;
+            cursor: pointer;
+            transition: all 0.06s linear;
+            font-family: 'Times New Roman', Times, serif;
+            letter-spacing: 2px;
+            min-width: 140px;
+            text-align: center;
+        }
+
+        .action-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 2px 0 #7b5a38;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.4;
+            transform: translateY(3px);
+            box-shadow: 0 4px 0 #7b5a38;
+            pointer-events: none;
+        }
+
+        .small-btn {
+            font-size: 1.5rem;
+            padding: 8px 20px;
+            min-width: 110px;
+        }
+
+        .nav-btn {
+            background: #b6d7a8;
+            border-color: #3f7842;
+            box-shadow: 0 6px 0 #2a5e2a;
+            color: #1f3f1f;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 挑战成功界面 */
+        .success-message {
+            width: 100%;
+            height: 100%;
+            background: #2b4b3a;
+            border-radius: 40px;
+            border: 12px solid #6f4f2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            color: #ffd966;
+            font-family: '楷体', 'KaiTi', serif;
+            box-shadow: inset 0 0 30px #c9ae74, 0 15px 0 #4d3e2b;
+        }
+
+        .success-message span {
+            font-size: 5vw;
+            font-weight: bold;
+            background: #5f4230;
+            padding: 10px 35px;
+            border-radius: 60px;
+            border: 4px solid #f9cb7b;
+        }
+
+        /* 手机微调 */
+        @media (max-width: 500px) {
+            .chinese-word {
+                font-size: 14vw;
+            }
+
+            .example-sentence {
+                font-size: 5vw;
+            }
+
+            .pinyin {
+                font-size: 6vw;
+            }
+
+            .pos {
+                font-size: 5.5vw;
+            }
+
+            .russian {
+                font-size: 5vw;
+            }
+
+            .action-btn {
+                font-size: 1.4rem;
+                padding: 10px 15px;
+                min-width: 110px;
+            }
+
+            .xinway-tag {
+                font-size: 1.1rem;
+                top: 6px;
+                left: 10px;
+            }
+
+            .blackboard-area {
+                min-height: 320px;
+            }
+        }
+
+        /* 汉字保持楷体 */
+        .chinese-word,
+        .example-sentence {
+            font-family: '楷体', 'KaiTi', '华文楷体', 'STKaiti', serif;
+        }
+
+        /* 字母新罗马 */
+        .pinyin,
+        .pos,
+        .russian,
+        .action-btn,
+        .xinway-tag {
+            font-family: 'Times New Roman', Times, serif;
+        }
+    </style>
+</head>
+<body>
+<div class="card-frame">
+    <!-- 可爱图标 + 词语练习 -->
+    <div class="header-icon">
+        <div class="icon-badge">
+            <span>📚✨</span>
+            <h1>词语练习</h1>
+        </div>
+    </div>
+
+    <!-- 大黑板区域 -->
+    <div class="blackboard-area" id="blackboardArea">
+        <!-- 动态内容：闪卡容器 或 挑战成功界面 -->
+        <div id="flashcardContainer" style="width: 100%; height: 100%;">
+            <div class="flip-container" id="flipContainer">
+                <div class="flip-inner" id="flipInner">
+                    <!-- 正面 -->
+                    <div class="front" id="cardFront">
+                        <span class="xinway-tag">xinwaychinese</span>
+                        <div class="word-area" id="frontContent">
+                            <div class="chinese-word" id="wordDisplay"></div>
+                            <div class="example-sentence" id="sentenceDisplay"></div>
+                        </div>
+                    </div>
+                    <!-- 背面 -->
+                    <div class="back" id="cardBack">
+                        <span class="xinway-tag">xinwaychinese</span>
+                        <div class="back-content" id="backContent">
+                            <div class="pinyin" id="pinyinDisplay"></div>
+                            <div class="pos" id="posDisplay"></div>
+                            <div class="russian" id="ruDisplay"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="successScreen" class="success-message hidden">
+            <span>🎉 挑战成功 🎉</span>
+            <button class="action-btn small-btn" id="restartFromSuccess">重新开始</button>
+        </div>
+    </div>
+
+    <!-- 按钮区域 -->
+    <div class="button-bar" id="buttonBar">
+        <button class="action-btn" id="startBtn">开始</button>
+        <button class="action-btn nav-btn hidden" id="prevBtn">◀ 上一个</button>
+        <button class="action-btn nav-btn hidden" id="nextBtn">下一个 ▶</button>
+        <button class="action-btn small-btn hidden" id="restartBtn">重新开始</button>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // 苹果设备检测与兼容处理
+        const isApple = /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent);
+        if (isApple) {
+            console.log('检测到苹果设备，启用兼容模式');
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initApp);
+            } else {
+                initApp();
+            }
+        } else {
+            initApp();
+        }
+
+        function initApp() {
+            // ---------- 词语数据 (根据用户提供的完整列表，共约120个) ----------
+            const cards = [
+                { word: "细节", pinyin: "xìjié", pos: "сущ.", ru: "деталь, подробность", ex: "注意细节很重要。" },
+                { word: "电台", pinyin: "diàntái", pos: "сущ.", ru: "радиостанция", ex: "我喜欢听音乐电台。" },
+                { word: "恩爱", pinyin: "ēn'ài", pos: "прил.", ru: "любящий (о муже и жене)", ex: "他们是一对恩爱的夫妻。" },
+                { word: "对比", pinyin: "duìbǐ", pos: "гл.", ru: "сравнивать", ex: "对比这两个词。" },
+                { word: "入围", pinyin: "rùwéi", pos: "гл.", ru: "попасть в шорт-лист", ex: "他入围了决赛。" },
+                { word: "评委", pinyin: "píngwěi", pos: "сущ.", ru: "судья, член жюри", ex: "评委打分。" },
+                { word: "如何", pinyin: "rúhé", pos: "мест.", ru: "как", ex: "你感觉如何？" },
+                { word: "瘫痪", pinyin: "tānhuàn", pos: "гл.", ru: "быть парализованным", ex: "他瘫痪了。" },
+                { word: "离婚", pinyin: "lí hūn", pos: "гл.", ru: "разводиться", ex: "他们离婚了。" },
+                { word: "自杀", pinyin: "zìshā", pos: "гл.", ru: "совершать самоубийство", ex: "不要做傻事。" },
+                { word: "抱怨", pinyin: "bàoyuàn", pos: "гл.", ru: "жаловаться", ex: "他常常抱怨。" },
+                { word: "爱护", pinyin: "àihù", pos: "гл.", ru: "заботиться, беречь", ex: "爱护动物。" },
+                { word: "婚姻", pinyin: "hūnyīn", pos: "сущ.", ru: "брак", ex: "婚姻需要经营。" },
+                { word: "吵架", pinyin: "chǎojià", pos: "гл.", ru: "ссориться", ex: "他们吵架了。" },
+                { word: "相敬如宾", pinyin: "xiāngjìng rú bīn", pos: "идиома", ru: "относиться с уважением", ex: "夫妻应相敬如宾。" },
+                { word: "暗暗", pinyin: "àn'àn", pos: "нареч.", ru: "тайно, про себя", ex: "他暗暗地笑了。" },
+                { word: "轮", pinyin: "lún", pos: "гл.", ru: "чередоваться", ex: "轮到你了。" },
+                { word: "不耐烦", pinyin: "bú nàifán", pos: "прил.", ru: "нетерпеливый", ex: "他很不耐烦。" },
+                { word: "靠", pinyin: "kào", pos: "гл.", ru: "прислоняться", ex: "靠在墙上。" },
+                { word: "肩膀", pinyin: "jiānbǎng", pos: "сущ.", ru: "плечо", ex: "肩膀很疼。" },
+                { word: "喊", pinyin: "hǎn", pos: "гл.", ru: "кричать, звать", ex: "大声喊。" },
+                { word: "伸", pinyin: "shēn", pos: "гл.", ru: "тянуть(ся)", ex: "伸出手。" },
+                { word: "手指", pinyin: "shǒuzhǐ", pos: "сущ.", ru: "палец (руки)", ex: "十个手指。" },
+                { word: "歪歪扭扭", pinyin: "wāiwāiniǔniǔ", pos: "прил.", ru: "кривой, перекошенный", ex: "字写得歪歪扭扭。" },
+                { word: "递", pinyin: "dì", pos: "гл.", ru: "передавать, вручать", ex: "递给我一杯水。" },
+                { word: "脑袋", pinyin: "nǎodai", pos: "сущ.", ru: "голова", ex: "脑袋疼。" },
+                { word: "女士", pinyin: "nǚshì", pos: "сущ.", ru: "дама, госпожа", ex: "女士们，先生们。" },
+                { word: "叙述", pinyin: "xùshù", pos: "гл.", ru: "повествовать", ex: "叙述一下经过。" },
+                { word: "居然", pinyin: "jūrán", pos: "нареч.", ru: "как же так", ex: "他居然来了。" },
+                { word: "催", pinyin: "cuī", pos: "гл.", ru: "торопить", ex: "别催我。" },
+                { word: "等待", pinyin: "děngdài", pos: "гл.", ru: "ждать", ex: "请等待。" },
+                { word: "蚊子", pinyin: "wénzi", pos: "сущ.", ru: "комар", ex: "蚊子很多。" },
+                { word: "半夜", pinyin: "bànyè", pos: "сущ.", ru: "полночь", ex: "半夜醒了。" },
+                { word: "叮", pinyin: "dīng", pos: "гл.", ru: "кусать (о насекомых)", ex: "蚊子叮了我。" },
+                { word: "老婆", pinyin: "lǎopo", pos: "сущ.", ru: "жена", ex: "我老婆很漂亮。" },
+                { word: "吵", pinyin: "chǎo", pos: "гл./прил.", ru: "шуметь; шумный", ex: "太吵了。" },
+                { word: "串", pinyin: "chuàn", pos: "счёт.", ru: "связка, гроздь", ex: "一串葡萄。" },
+                { word: "一辈子", pinyin: "yíbèizi", pos: "сущ.", ru: "вся жизнь", ex: "一辈子很长。" },
+                { word: "农村", pinyin: "nóngcūn", pos: "сущ.", ru: "деревня", ex: "他在农村长大。" },
+                { word: "屋子", pinyin: "wūzi", pos: "сущ.", ru: "дом, изба", ex: "屋子很干净。" },
+                { word: "断", pinyin: "duàn", pos: "гл.", ru: "отрезать, прерывать", ex: "绳子断了。" },
+                { word: "以来", pinyin: "yǐlái", pos: "сущ.", ru: "с (какого-то времени)", ex: "去年以来，他很忙。" },
+                { word: "姥姥", pinyin: "lǎolao", pos: "сущ.", ru: "бабушка по матери", ex: "姥姥八十岁了。" },
+                { word: "舅舅", pinyin: "jiùjiu", pos: "сущ.", ru: "дядя по матери", ex: "舅舅是医生。" },
+                { word: "姑姑", pinyin: "gūgu", pos: "сущ.", ru: "тётя по отцу", ex: "姑姑在北京。" },
+                { word: "坚决", pinyin: "jiānjué", pos: "прил.", ru: "решительный, твёрдый", ex: "他坚决反对。" },
+                { word: "打工", pinyin: "dǎ gōng", pos: "гл.", ru: "работать по найму", ex: "暑假去打工。" },
+                { word: "挣", pinyin: "zhèng", pos: "гл.", ru: "зарабатывать", ex: "他挣了很多钱。" },
+                { word: "县", pinyin: "xiàn", pos: "сущ.", ru: "уезд", ex: "这个县很大。" },
+                { word: "套", pinyin: "tào", pos: "счёт.", ru: "комплект, набор", ex: "一套房子。" },
+                { word: "装修", pinyin: "zhuāngxiū", pos: "гл.", ru: "ремонтировать", ex: "正在装修。" },
+                { word: "不得了", pinyin: "bùdéliǎo", pos: "прил.", ru: "чрезвычайный", ex: "高兴得不得了。" },
+                { word: "醉", pinyin: "zuì", pos: "гл.", ru: "быть пьяным", ex: "他喝醉了。" },
+                { word: "强烈", pinyin: "qiángliè", pos: "прил.", ru: "сильный", ex: "强烈反对。" },
+                { word: "夜", pinyin: "yè", pos: "сущ.", ru: "ночь", ex: "夜深了。" },
+                { word: "锁", pinyin: "suǒ", pos: "сущ./гл.", ru: "замок; запирать", ex: "锁门。" },
+                { word: "临", pinyin: "lín", pos: "предлог", ru: "перед, накануне", ex: "临走前。" },
+                { word: "悄悄", pinyin: "qiāoqiāo", pos: "нареч.", ru: "тихо, тайком", ex: "悄悄走了。" },
+                { word: "晒", pinyin: "shài", pos: "гл.", ru: "сушить на солнце", ex: "晒衣服。" },
+                { word: "被子", pinyin: "bèizi", pos: "сущ.", ru: "одеяло", ex: "晒被子。" },
+                { word: "长途", pinyin: "chángtú", pos: "прил.", ru: "дальний", ex: "长途汽车。" },
+                { word: "冻", pinyin: "dòng", pos: "гл.", ru: "замерзать", ex: "手冻了。" },
+                { word: "想象", pinyin: "xiǎngxiàng", pos: "гл.", ru: "воображать", ex: "很难想象。" },
+                { word: "灰尘", pinyin: "huīchén", pos: "сущ.", ru: "пыль", ex: "有灰尘。" },
+                { word: "亮", pinyin: "liàng", pos: "прил./гл.", ru: "яркий; светить", ex: "灯亮了。" },
+                { word: "微笑", pinyin: "wēixiào", pos: "гл./сущ.", ru: "улыбаться; улыбка", ex: "她对我微笑。" },
+                { word: "温暖", pinyin: "wēnnuǎn", pos: "прил./гл.", ru: "тёплый; согревать", ex: "春天温暖。" },
+                { word: "立刻", pinyin: "lìkè", pos: "нареч.", ru: "немедленно", ex: "立刻出发。" },
+                { word: "扑", pinyin: "pū", pos: "гл.", ru: "бросаться", ex: "扑向妈妈。" },
+                { word: "卧室", pinyin: "wòshì", pos: "сущ.", ru: "спальня", ex: "卧室很小。" },
+                { word: "铺", pinyin: "pū", pos: "гл.", ru: "расстилать", ex: "铺床单。" },
+                { word: "飘", pinyin: "piāo", pos: "гл.", ru: "парить", ex: "树叶飘落。" },
+                { word: "阵", pinyin: "zhèn", pos: "счёт.", ru: "порыв, приступ", ex: "一阵风。" },
+                { word: "感受", pinyin: "gǎnshòu", pos: "гл./сущ.", ru: "чувствовать; чувство", ex: "感受温暖。" },
+                { word: "流泪", pinyin: "liú lèi", pos: "гл.", ru: "проливать слёзы", ex: "感动得流泪。" }
+            ];
+
+            // DOM 元素
+            const startBtn = document.getElementById('startBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            const restartFromSuccess = document.getElementById('restartFromSuccess');
+            const flipContainer = document.getElementById('flipContainer');
+            const flipInner = document.getElementById('flipInner');
+            const flashcardContainer = document.getElementById('flashcardContainer');
+            const successScreen = document.getElementById('successScreen');
+            const wordDisplay = document.getElementById('wordDisplay');
+            const sentenceDisplay = document.getElementById('sentenceDisplay');
+            const pinyinDisplay = document.getElementById('pinyinDisplay');
+            const posDisplay = document.getElementById('posDisplay');
+            const ruDisplay = document.getElementById('ruDisplay');
+
+            // 状态变量
+            let currentIndex = 0;
+            let gameActive = false;
+
+            function updateCardContent() {
+                if (currentIndex >= 0 && currentIndex < cards.length) {
+                    const card = cards[currentIndex];
+                    wordDisplay.textContent = card.word;
+                    sentenceDisplay.textContent = card.ex;
+                    pinyinDisplay.textContent = card.pinyin;
+                    posDisplay.textContent = card.pos;
+                    ruDisplay.textContent = card.ru;
+                }
+            }
+
+            function resetFlip() {
+                flipInner.classList.remove('flipped');
+            }
+
+            function showScreenByIndex() {
+                if (currentIndex >= cards.length) {
+                    flashcardContainer.classList.add('hidden');
+                    successScreen.classList.remove('hidden');
+                    restartBtn.classList.remove('hidden'); 
+                    prevBtn.classList.add('hidden');
+                    nextBtn.classList.add('hidden');
+                    startBtn.classList.add('hidden');
+                } else {
+                    flashcardContainer.classList.remove('hidden');
+                    successScreen.classList.add('hidden');
+                    updateCardContent();
+                    resetFlip();
+                    if (gameActive) {
+                        startBtn.classList.add('hidden');
+                        prevBtn.classList.remove('hidden');
+                        nextBtn.classList.remove('hidden');
+                        restartBtn.classList.remove('hidden');
+                    } else {
+                        startBtn.classList.remove('hidden');
+                        prevBtn.classList.add('hidden');
+                        nextBtn.classList.add('hidden');
+                        restartBtn.classList.add('hidden');
+                    }
+                }
+            }
+
+            function startGame() {
+                gameActive = true;
+                if (currentIndex >= cards.length) currentIndex = 0;
+                showScreenByIndex();
+            }
+
+            function restartGame() {
+                currentIndex = 0;
+                gameActive = true;
+                resetFlip();
+                showScreenByIndex();
+            }
+
+            function goPrev() {
+                if (!gameActive) return;
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    showScreenByIndex();
+                }
+            }
+
+            function goNext() {
+                if (!gameActive) return;
+                if (currentIndex < cards.length - 1) {
+                    currentIndex++;
+                    showScreenByIndex();
+                } else if (currentIndex === cards.length - 1) {
+                    currentIndex++;
+                    showScreenByIndex();
+                }
+            }
+
+            function handleBlackboardClick(e) {
+                if (!gameActive || currentIndex >= cards.length) return;
+                if (flipInner.classList.contains('flipped')) {
+                    flipInner.classList.remove('flipped');
+                } else {
+                    flipInner.classList.add('flipped');
+                }
+            }
+
+            // 事件绑定
+            flipContainer.addEventListener('click', handleBlackboardClick);
+
+            startBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                startGame();
+            });
+            prevBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                goPrev();
+            });
+            nextBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                goNext();
+            });
+            restartBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                restartGame();
+            });
+            restartFromSuccess.addEventListener('click', (e) => {
+                e.stopPropagation();
+                restartGame();
+            });
+
+            // 初始状态：未激活，显示第一张卡片
+            currentIndex = 0;
+            gameActive = false;
+            showScreenByIndex();
+            resetFlip();
+        }
+    })();
+</script>
+</body>
+</html>
